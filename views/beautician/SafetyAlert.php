@@ -1,324 +1,239 @@
 <?php
 
 
-class SafetyAlert
-{
+$pageTitle = "Safety Alert | LA MIRROR";
 
 
-    private $conn;
+require __DIR__ . '/../partials/header.php';
 
 
+?>
 
-    public function __construct($conn)
-    {
 
-        $this->conn = $conn;
+<div class="dashboard-wrapper">
 
-    }
 
 
+<div class="dashboard-header">
 
 
+<div>
 
 
+<span class="dashboard-small">
 
-/*
-==================================
-ADD SAFETY ALERT (MANUAL)
-==================================
-*/
+BEAUTICIAN PANEL
 
+</span>
 
-public function addAlert(
-    $customer,
-    $allergy,
-    $note
-)
-{
 
 
-    $query = "
+<h1>
 
-    INSERT INTO safety_alerts
+Customer Safety Alerts
 
-    (
-        customer_id,
-        allergy_name,
-        note,
-        status
-    )
+</h1>
 
 
-    VALUES
 
-    (?,?,?,'pending')
+<p>
 
-    ";
+Review customer allergy and safety information before starting service.
 
+</p>
 
 
-    $stmt =
-        mysqli_prepare(
-            $this->conn,
-            $query
-        );
+</div>
 
 
 
-    mysqli_stmt_bind_param(
-        $stmt,
-        "iss",
-        $customer,
-        $allergy,
-        $note
-    );
+<a href="index.php?page=beautician-dashboard"
+class="dashboard-logout">
 
+Back Dashboard
 
+</a>
 
-    return mysqli_stmt_execute($stmt);
 
 
-}
+</div>
 
 
 
 
 
+<div class="feature-grid">
 
+<?php foreach($alerts as $alert): ?>
 
 
-/*
-==================================
-CREATE SAFETY ALERT FROM APPOINTMENT
-==================================
-*/
 
+<div class="feature-card">
 
-public function createAlertFromAppointment(
-    $appointmentId
-)
-{
 
 
-    $query = "
+<h3>
 
-    INSERT INTO safety_alerts
+<?= htmlspecialchars(
+    $alert['customer_name'] ?? ''
+); ?>
 
-    (
+</h3>
 
-        appointment_id,
 
-        customer_id,
 
-        allergy_name,
 
-        note,
 
-        status
+<p>
 
-    )
+<b>Service:</b>
 
+<?= htmlspecialchars(
+    $alert['service_name'] ?? 'N/A'
+); ?>
 
-    SELECT
 
+</p>
 
-        id,
 
-        customer_id,
 
-        safety_note,
 
-        safety_note,
 
-        'pending'
 
+<p>
 
-    FROM appointments
+<b>Appointment Date:</b>
 
+<?= htmlspecialchars(
+    $alert['appointment_date'] ?? 'N/A'
+); ?>
 
-    WHERE id = ?
 
+</p>
 
-    ";
 
 
 
 
-    $stmt =
-        mysqli_prepare(
-            $this->conn,
-            $query
-        );
+<p>
 
+<b>Time:</b>
 
+<?= htmlspecialchars(
+    $alert['appointment_time'] ?? 'N/A'
+); ?>
 
 
-    mysqli_stmt_bind_param(
-        $stmt,
-        "i",
-        $appointmentId
-    );
+</p>
 
 
 
 
-    return mysqli_stmt_execute($stmt);
 
 
 
-}
+<p>
 
+<b>Allergy / Safety Issue:</b>
 
 
+<br>
 
 
+<?= htmlspecialchars(
+    $alert['allergy_name'] ?? ''
+); ?>
 
 
-/*
-==================================
-GET ALL ALERTS
-==================================
-*/
+</p>
 
 
-public function getAllAlerts()
-{
 
 
-$query = "
 
-SELECT
 
 
-safety_alerts.*,
+<p>
 
+<b>Note:</b>
 
-users.full_name AS customer_name,
 
+<br>
 
-services.service_name,
 
+<?= htmlspecialchars(
+    $alert['note'] ?? ''
+); ?>
 
-appointments.appointment_date,
 
+</p>
 
-appointments.appointment_time
 
 
 
-FROM safety_alerts
 
 
 
-LEFT JOIN users
 
-ON safety_alerts.customer_id = users.id
+<span class="dashboard-small">
 
+Status:
 
+<?= ucfirst(
+    $alert['status'] ?? 'pending'
+); ?>
 
 
-LEFT JOIN appointments
+</span>
 
-ON safety_alerts.appointment_id = appointments.id
 
 
 
 
-LEFT JOIN services
 
-ON appointments.service_id = services.id
+<br><br>
 
 
 
+<a 
 
-ORDER BY safety_alerts.id DESC
+href="index.php?page=delete-alert&id=<?= $alert['id']; ?>"
 
+class="danger-btn"
 
+onclick="return confirm('Delete this alert?');"
 
-";
+>
 
+Delete
 
+</a>
 
 
-$result =
 
-mysqli_query(
-    $this->conn,
-    $query
-);
 
 
+</div>
 
 
-$alerts = [];
 
 
+<?php endforeach; ?>
 
 
-while($row = mysqli_fetch_assoc($result))
-{
 
+</div>
 
-    $alerts[] = $row;
 
 
-}
+</div>
 
 
 
 
-return $alerts;
 
+<?php
 
-
-}
-/*
-==================================
-DELETE ALERT
-==================================
-*/
-
-
-public function deleteAlert($id)
-{
-
-
-    $query = "
-
-    DELETE FROM safety_alerts
-
-    WHERE id=?
-
-    ";
-
-
-
-    $stmt =
-        mysqli_prepare(
-            $this->conn,
-            $query
-        );
-
-
-
-    mysqli_stmt_bind_param(
-        $stmt,
-        "i",
-        $id
-    );
-
-
-
-    return mysqli_stmt_execute($stmt);
-
-
-}
-
-
-
-
-
-
-}
+require __DIR__ . '/../partials/footer.php';
 
 ?>
