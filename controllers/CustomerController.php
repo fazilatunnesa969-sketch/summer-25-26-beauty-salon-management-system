@@ -2,42 +2,9 @@
 
 
 require_once __DIR__ . '/../models/Customer.php';
+require_once __DIR__ . '/../models/Invoice.php';
 require_once __DIR__ . '/../models/SafetyAlert.php';
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../models/Invoice.php';
-
-
-
-class CustomerController
-{
-
-
-    private $customerModel;
-
-    private $alertModel;
-    private $invoiceModel;
-
-
-
-    public function __construct()
-    {
-
-        global $conn;
-
-
-        $this->customerModel =
-            new Customer($conn);
-
-
-        $this->alertModel =
-            new SafetyAlert($conn);
-
-        $this->invoiceModel =
-            new Invoice($conn);
-
-    }
-
-
 
 
 
@@ -48,15 +15,14 @@ BOOK APPOINTMENT PAGE
 ==================================
 */
 
-
-public function bookAppointment()
+function bookAppointment()
 {
+
+    global $conn;
 
 
     $services =
-        $this->customerModel
-        ->getServices();
-
+    getCustomerServices($conn);
 
 
     $customer = [];
@@ -73,12 +39,13 @@ public function bookAppointment()
 
 
         $customer =
-            $this->customerModel
-            ->getCustomerInfo($customerId);
+            getCustomerInfo(
+                $conn,
+                $customerId
+            );
 
 
     }
-
 
 
 
@@ -86,9 +53,7 @@ public function bookAppointment()
     . '/../views/customer/book-appointment.php';
 
 
-
 }
-
 
 
 
@@ -103,9 +68,10 @@ CUSTOMER DASHBOARD
 ==================================
 */
 
-
-public function dashboard()
+function customerDashboard()
 {
+
+    global $conn;
 
 
     $customerId =
@@ -114,14 +80,18 @@ public function dashboard()
 
 
     $appointments =
-        $this->customerModel
-        ->getAppointments($customerId);
+        getAppointments(
+            $conn,
+            $customerId
+        );
 
-     $nextVisit =
-        $this->customerModel
-        ->getNextRecommendedVisit($customerId);
-        
-            
+
+
+    $nextVisit =
+        getNextRecommendedVisit(
+            $conn,
+            $customerId
+        );
 
 
 
@@ -129,9 +99,7 @@ public function dashboard()
     . '/../views/dashboard/index.php';
 
 
-
 }
-
 
 
 
@@ -146,107 +114,109 @@ MY APPOINTMENTS
 ==================================
 */
 
-
-public function myAppointments()
+function myAppointments()
 {
+
+    global $conn;
+
+
     if(!isset($_SESSION['user_id']))
-{
+    {
 
-echo json_encode([
-"status"=>"error",
-"message"=>"Session expired"
-]);
+        echo json_encode([
+            "status"=>"error",
+            "message"=>"Session expired"
+        ]);
 
-exit;
+        exit;
+
+    }
+
+
+
+    $customerId =
+        $_SESSION['user_id'];
+
+
+
+    $appointments =
+        getUpcomingAppointments(
+            $conn,
+            $customerId
+        );
+
+
+
+    require __DIR__
+    . '/../views/customer/my-appointments.php';
+
 
 }
 
 
-$customerId =
-$_SESSION['user_id'];
 
 
 
-$appointments =
-
-$this->customerModel
-->getUpcomingAppointments($customerId);
 
 
 
-require __DIR__
-. '/../views/customer/my-appointments.php';
-
-
-
-}
 /*
 ==================================
 SEARCH APPOINTMENTS AJAX
 ==================================
 */
 
-
-public function searchAppointments()
+function customerSearchAppointments()
 {
 
-
-if(!isset($_SESSION['user_id']))
-{
+    global $conn;
 
 
-echo json_encode([]);
+    if(!isset($_SESSION['user_id']))
+    {
 
 
-exit;
+        echo json_encode([]);
 
 
-}
+        exit;
 
 
-
-
-$customerId =
-
-$_SESSION['user_id'];
+    }
 
 
 
-$keyword =
+    $customerId =
+        $_SESSION['user_id'];
 
-$_GET['keyword'] ?? '';
 
+
+    $keyword =
+        $_GET['keyword'] ?? '';
 
 
 
 
-$appointments =
-
-$this->customerModel
-->searchAppointments(
-
-$customerId,
-
-$keyword
-
-);
+    $appointments =
+        searchAppointments(
+            $conn,
+            $customerId,
+            $keyword
+        );
 
 
 
-
-
-header(
-'Content-Type: application/json'
-);
-
-
-
-echo json_encode($appointments);
+    header(
+        'Content-Type: application/json'
+    );
 
 
 
-exit;
+    echo json_encode($appointments);
 
+
+
+    exit;
 
 
 }
@@ -256,172 +226,92 @@ CANCEL APPOINTMENT AJAX
 ==================================
 */
 
-
-public function cancelAppointment()
+function cancelAppointment()
 {
 
+    global $conn;
+
+
+    header(
+        'Content-Type: application/json'
+    );
+
+
+
+    if(!isset($_SESSION['user_id']))
+    {
+
+
+        echo json_encode([
+
+            "status"=>"error",
+
+            "message"=>"Unauthorized"
+
+        ]);
+
+
+        exit;
+
+
+    }
 
 
 
 
-header(
-'Content-Type: application/json'
-);
+    $customerId =
+        $_SESSION['user_id'];
 
 
 
-if(!isset($_SESSION['user_id']))
-{
+    $appointmentId =
+        $_POST['appointment_id']
+        ?? null;
 
 
-echo json_encode([
-"status"=>"error",
-"message"=>"Unauthorized"
-]);
+
+    if(!$appointmentId)
+    {
 
 
-exit;
+        echo json_encode([
+
+            "status"=>"error",
+
+            "message"=>"Invalid appointment"
+
+        ]);
+
+
+        exit;
+
+
+    }
+
+
+
+    $result =
+        cancelCustomerAppointment(
+            $conn,
+            $appointmentId,
+            $customerId
+        );
+
+
+
+    echo json_encode([
+
+        "status" =>
+        $result ? "success" : "error"
+
+    ]);
+
+
+
+    exit;
 
 
 }
-
-
-
-
-$customerId =
-$_SESSION['user_id'];
-
-
-
-$appointmentId =
-$_POST['appointment_id'] ?? null;
-
-
-
-
-if(!$appointmentId)
-{
-
-
-echo json_encode([
-"status"=>"error",
-"message"=>"Invalid appointment"
-]);
-
-
-exit;
-
-
-}
-
-
-
-
-
-$result =
-
-$this->customerModel
-->cancelAppointment(
-
-$appointmentId,
-
-$customerId
-
-);
-
-
-
-
-
-echo json_encode([
-
-"status" => $result ? "success" : "error"
-
-]);
-
-
-
-exit;
-
-
-
-}
-
-public function rescheduleAppointment()
-{
-
-
-header(
-'Content-Type: application/json'
-);
-
-
-
-if(!isset($_SESSION['user_id']))
-{
-
-echo json_encode([
-"status"=>"error",
-"message"=>"Session expired"
-]);
-
-exit;
-
-}
-
-
-
-$customerId =
-$_SESSION['user_id'];
-
-
-
-$id =
-$_POST['appointment_id'];
-
-
-
-$date =
-$_POST['appointment_date'];
-
-
-
-$time =
-$_POST['appointment_time'];
-
-
-
-
-$result =
-$this->customerModel
-->rescheduleAppointment(
-
-$id,
-
-$customerId,
-
-$date,
-
-$time
-
-);
-
-
-
-
-echo json_encode([
-
-"status" =>
-$result ? "success":"error"
-
-]);
-
-
-exit;
-
-
-}
-
 
 
 
@@ -432,13 +322,42 @@ exit;
 
 /*
 ==================================
-MY PAYMENTS
+RESCHEDULE APPOINTMENT
 ==================================
 */
 
-
-public function myPayments()
+function rescheduleAppointment()
 {
+
+    global $conn;
+
+
+    header(
+        'Content-Type: application/json'
+    );
+
+
+
+    if(!isset($_SESSION['user_id']))
+    {
+
+
+        echo json_encode([
+
+            "status"=>"error",
+
+            "message"=>"Session expired"
+
+        ]);
+
+
+
+        exit;
+
+
+    }
+
+
 
 
     $customerId =
@@ -446,15 +365,46 @@ public function myPayments()
 
 
 
-    $payments =
-        $this->customerModel
-        ->getPayments($customerId);
+    $id =
+        $_POST['appointment_id'];
 
 
 
-    require __DIR__
-    . '/../views/customer/my-payments.php';
+    $date =
+        $_POST['appointment_date'];
 
+
+
+    $time =
+        $_POST['appointment_time'];
+
+
+
+
+
+    $result =
+        rescheduleAppointment(
+            $conn,
+            $id,
+            $customerId,
+            $date,
+            $time
+        );
+
+
+
+
+
+    echo json_encode([
+
+        "status" =>
+        $result ? "success" : "error"
+
+    ]);
+
+
+
+    exit;
 
 
 }
@@ -472,32 +422,34 @@ SAVE APPOINTMENT
 ==================================
 */
 
-
-public function saveAppointment()
+function saveAppointment()
 {
 
-
-if($_SERVER['REQUEST_METHOD']=="POST")
-{
+    global $conn;
 
 
-$service =
-$_POST['service_id'];
+    if($_SERVER['REQUEST_METHOD']=="POST")
+    {
 
 
-
-$date =
-$_POST['appointment_date'];
+        $service =
+            $_POST['service_id'];
 
 
 
-$time =
-$_POST['appointment_time'];
+        $date =
+            $_POST['appointment_date'];
 
 
 
-$safetyNote =
-$_POST['safety_note'] ?? '';
+        $time =
+            $_POST['appointment_time'];
+
+
+
+        $safetyNote =
+            $_POST['safety_note']
+            ?? '';
 
 
 
@@ -505,85 +457,203 @@ $_POST['safety_note'] ?? '';
 
 
 
+        /*
+        ==========================
+        CHECK CUSTOMER LOGIN
+        ==========================
+        */
 
+
+        if(isset($_SESSION['user_id']))
+        {
+
+
+            $customerId =
+                $_SESSION['user_id'];
+
+
+        }
+        else
+        {
+
+
+            $fullName =
+                $_POST['full_name'];
+
+
+
+            $email =
+                $_POST['email'];
+
+
+
+            $phone =
+                $_POST['phone'];
+
+
+
+            $password =
+                $_POST['password'];
+
+
+
+
+
+            $customerId =
+                createCustomer(
+                    $conn,
+                    $fullName,
+                    $email,
+                    $phone,
+                    $password
+                );
+
+
+
+
+
+            $_SESSION['user_id'] =
+                $customerId;
+
+
+
+            $_SESSION['role'] =
+                "customer";
+
+
+
+            $_SESSION['full_name'] =
+                $fullName;
+
+
+
+            $_SESSION['email'] =
+                $email;
+
+
+        }
+
+
+
+
+
+
+
+        /*
+        ==========================
+        GET SERVICE DATA
+        ==========================
+        */
+
+
+        $serviceData =
+            getServiceById(
+                $conn,
+                $service
+            );
+
+
+
+        if(!$serviceData)
+        {
+
+            die("Service not found");
+
+        }
+
+
+
+
+
+
+
+        /*
+        ==========================
+        CREATE APPOINTMENT
+        ==========================
+        */
+
+
+        $appointmentId =
+            createAppointment(
+                $conn,
+                $customerId,
+                $service,
+                $date,
+                $time,
+                $safetyNote
+            );
+
+
+
+
+
+
+        /*
+        ==========================
+        CREATE INVOICE
+        ==========================
+        */
+
+
+        createInvoice(
+            $conn,
+            $appointmentId,
+            $customerId,
+            $serviceData['price'],
+            "Not Selected"
+        );
+
+
+
+
+
+
+        header(
+            "Location:index.php?page=customer-dashboard"
+        );
+
+
+        exit;
+
+
+    }
+
+
+}
 /*
-==========================
-CHECK CUSTOMER LOGIN
-==========================
+==================================
+MY PAYMENTS
+==================================
 */
 
-
-if(isset($_SESSION['user_id']))
+function myPayments()
 {
+
+    global $conn;
 
 
     $customerId =
-    $_SESSION['user_id'];
-
-
-}
-
-else
-{
-
-
-    $fullName =
-    $_POST['full_name'];
+        $_SESSION['user_id'];
 
 
 
-    $email =
-    $_POST['email'];
+    /*
+    NOTE:
+    তোমার Customer model-এ getPayments()
+    function আগে ছিল না।
+    তাই যদি payment page কাজ না করে,
+    আলাদা payment model/function লাগবে।
+    */
 
 
 
-    $phone =
-    $_POST['phone'];
+    $payments = [];
 
 
 
-    $password =
-    $_POST['password'];
-
-
-
-
-
-    $customerId =
-    $this->customerModel
-    ->createCustomer(
-
-        $fullName,
-
-        $email,
-
-        $phone,
-
-        $password
-
-    );
-
-
-
-
-
-    $_SESSION['user_id'] =
-    $customerId;
-
-
-
-    $_SESSION['role'] =
-    "customer";
-
-
-
-    $_SESSION['full_name'] =
-    $fullName;
-
-
-
-    $_SESSION['email'] =
-    $email;
+    require __DIR__
+    . '/../views/customer/my-payments.php';
 
 
 }
@@ -594,194 +664,112 @@ else
 
 
 
-/*
-==========================
-GET SERVICE DATA
-==========================
-*/
 
-
-$serviceData =
-$this->customerModel
-->getServiceById($service);
-
-
-
-if(!$serviceData)
-{
-
-    die("Service not found");
-
-}
-
-
-
-
-
-
-
-
-/*
-==========================
-CREATE APPOINTMENT
-==========================
-*/
-
-
-$appointmentId =
-$this->customerModel
-->createAppointment(
-
-    $customerId,
-
-    $service,
-
-    $date,
-
-    $time,
-
-    $safetyNote
-
-);
-
-/*
-==========================
-CREATE INVOICE
-==========================
-*/
-
-
-$this->invoiceModel
-->createInvoice(
-
-    $appointmentId,
-
-    $customerId,
-
-    $serviceData['price'],
-
-    "Not Selected"
-
-);
-
-
-
-
-
-
-
-
-
-
-
-
-
-header(
-    "Location:index.php?page=customer-dashboard"
-    );
-
-
-
-exit;
-
-
-}
-
-
-}
 /*
 ==================================
 SAVE PAYMENT
 ==================================
 */
 
-
-public function savePayment()
+function savePayment()
 {
 
+    global $conn;
 
-if($_SERVER['REQUEST_METHOD']=="POST")
-{
 
+    if($_SERVER['REQUEST_METHOD']=="POST")
+    {
 
-$customerId =
-$_SESSION['user_id'];
 
+        $customerId =
+            $_SESSION['user_id'];
 
 
 
+        $amount =
+            $_SESSION['service_price']
+            ?? 0;
 
-$amount =
-$_SESSION['service_price'];
 
 
+        $paymentMethod =
+            $_POST['payment_method'];
 
-$paymentMethod =
-$_POST['payment_method'];
 
 
+        $transactionId =
+            $_POST['transaction_id'];
 
-$transactionId =
-$_POST['transaction_id'];
 
 
 
 
 
 
+        /*
+        ==========================
+        GET LAST APPOINTMENT
+        ==========================
+        */
 
-/*
-==========================
-GET LAST APPOINTMENT
-==========================
-*/
 
+        $appointment =
+            getLastAppointment(
+                $conn,
+                $customerId
+            );
 
-$appointment =
 
-$this->customerModel
-->getLastAppointment($customerId);
 
 
 
+        if($appointment)
+        {
 
 
+            $appointmentId =
+                $appointment['id'];
 
-if($appointment)
-{
 
 
-$appointmentId =
-$appointment['id'];
 
 
 
 
+            /*
+            ==========================
+            SAVE PAYMENT
+            ==========================
+            */
 
 
+            createPayment(
+                $conn,
+                $customerId,
+                $appointmentId,
+                $amount,
+                $paymentMethod,
+                $transactionId
+            );
 
-/*
-==========================
-SAVE PAYMENT
-==========================
-*/
 
 
-$this->customerModel
-->createPayment(
 
-    $customerId,
 
-    $appointmentId,
 
-    $amount,
 
-    $paymentMethod,
 
-    $transactionId
+            /*
+            ==========================
+            UPDATE PAYMENT STATUS
+            ==========================
+            */
 
-);
 
+            updateCustomerPaymentStatus(
+                $conn,
+                $appointmentId
+            );
 
 
 
@@ -789,19 +777,20 @@ $this->customerModel
 
 
 
-/*
-==========================
-UPDATE PAYMENT STATUS
-==========================
-*/
+            /*
+            ==========================
+            CREATE SAFETY ALERT
+            ==========================
+            */
 
 
-$this->customerModel
-->updatePaymentStatus(
+            createSafetyAlert(
+                $conn,
+                $appointmentId
+            );
 
-    $appointmentId
 
-);
+        }
 
 
 
@@ -809,124 +798,86 @@ $this->customerModel
 
 
 
-/*
-==========================
-CREATE SAFETY ALERT
-==========================
-*/
+        header(
+            "Location:index.php?page=customer-dashboard"
+        );
 
 
-$this->customerModel
-->createSafetyAlert(
 
-    $appointmentId
+        exit;
 
-);
 
+
+    }
 
 
 }
-
-
-
-
-
-
-
-header(
-
-"Location:index.php?page=customer-dashboard"
-
-);
-
-
-
-exit;
-
-
-
-}
-
-
-}
-
-
-
-
-
-
-
-
-
 /*
 ==================================
 MY PROFILE
 ==================================
 */
 
-
-public function profile()
+function profile()
 {
 
-
-if(!isset($_SESSION['user_id']))
-{
+    global $conn;
 
 
-header(
 
-"Location:index.php?page=login"
-
-);
+    if(!isset($_SESSION['user_id']))
+    {
 
 
-exit;
+        header(
+            "Location:index.php?page=login"
+        );
+
+
+        exit;
+
+
+    }
+
+
+
+
+
+    $customerId =
+        $_SESSION['user_id'];
+
+
+
+
+
+
+    $profile =
+        getProfile(
+            $conn,
+            $customerId
+        );
+
+
+
+
+    $appointmentHistory =
+        getProfileHistory(
+            $conn,
+            $customerId
+        );
+
+
+
+
+
+
+
+    require __DIR__
+
+    . '/../views/customer/profile.php';
+
 
 
 }
 
-
-
-
-
-
-
-$customerId =
-
-$_SESSION['user_id'];
-
-
-
-
-
-
-$profile =
-
-$this->customerModel
-->getProfile($customerId);
-
-$appointmentHistory =
-
-$this->customerModel
-->getProfileHistory($customerId);
-
-
-
-
-
-
-
-require __DIR__
-
-. '/../views/customer/profile.php';
-
-
-
-}
-
-
-
-
-
-}
 ?>
