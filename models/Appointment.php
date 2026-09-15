@@ -1,230 +1,76 @@
 <?php
 
 
-class Appointment
+/*
+==================================
+GET ALL APPOINTMENTS
+==================================
+*/
+
+function getAllAppointments($conn)
 {
 
 
-    private $conn;
+    $query = "
 
+    SELECT
 
+    appointments.*,
 
-    public function __construct($conn)
-    {
+    customer.full_name AS customer_name,
 
-        $this->conn = $conn;
+    beautician.full_name AS beautician_name,
 
-    }
+    services.service_name
 
 
+    FROM appointments
 
 
+    LEFT JOIN users customer
 
+    ON appointments.customer_id = customer.id
 
 
-    /*
-    ==================================
-    GET ALL APPOINTMENTS
-    ==================================
-    */
+    LEFT JOIN users beautician
 
+    ON appointments.beautician_id = beautician.id
 
-    public function getAllAppointments()
-    {
 
+    LEFT JOIN services
 
-        $query = "
+    ON appointments.service_id = services.id
 
-        SELECT
 
-        appointments.*,
+    ORDER BY appointments.id DESC
 
-        customer.full_name AS customer_name,
+    ";
 
-        beautician.full_name AS beautician_name,
 
-        services.service_name
-
-
-
-        FROM appointments
-
-
-
-        LEFT JOIN users customer
-
-        ON appointments.customer_id = customer.id
-
-
-
-        LEFT JOIN users beautician
-
-        ON appointments.beautician_id = beautician.id
-
-
-
-        LEFT JOIN services
-
-        ON appointments.service_id = services.id
-
-
-
-        ORDER BY appointments.id DESC
-
-        ";
-
-
-
-        $result =
-            mysqli_query(
-                $this->conn,
-                $query
-            );
-
-
-
-        $appointments = [];
-
-
-
-        while($row = mysqli_fetch_assoc($result))
-        {
-
-            $appointments[] = $row;
-
-        }
-
-
-
-        return $appointments;
-
-
-    }
-
-
-
-
-
-
-
-
-
-    /*
-    ==================================
-    SEARCH APPOINTMENTS
-    ==================================
-    */
-
-
-    public function searchAppointments($keyword)
-    {
-
-
-        $keyword = "%" . $keyword . "%";
-
-
-
-        $query = "
-
-        SELECT
-
-        appointments.*,
-
-        customer.full_name AS customer_name,
-
-        beautician.full_name AS beautician_name,
-
-        services.service_name
-
-
-
-        FROM appointments
-
-
-
-        LEFT JOIN users customer
-
-        ON appointments.customer_id = customer.id
-
-
-
-        LEFT JOIN users beautician
-
-        ON appointments.beautician_id = beautician.id
-
-
-
-        LEFT JOIN services
-
-        ON appointments.service_id = services.id
-
-
-
-        WHERE
-
-        customer.full_name LIKE ?
-
-        OR beautician.full_name LIKE ?
-
-        OR services.service_name LIKE ?
-
-        OR appointments.status LIKE ?
-
-
-
-        ORDER BY appointments.id DESC
-
-        ";
-
-
-
-        $stmt =
-            mysqli_prepare(
-                $this->conn,
-                $query
-            );
-
-
-
-        mysqli_stmt_bind_param(
-            $stmt,
-            "ssss",
-            $keyword,
-            $keyword,
-            $keyword,
-            $keyword
+    $result =
+        mysqli_query(
+            $conn,
+            $query
         );
 
 
-
-        mysqli_stmt_execute($stmt);
-
+    $appointments = [];
 
 
-        $result =
-            mysqli_stmt_get_result($stmt);
+    while($row =
+        mysqli_fetch_assoc($result))
+    {
 
 
-
-        $appointments = [];
-
-
-
-        while($row = mysqli_fetch_assoc($result))
-        {
-
-            $appointments[] = $row;
-
-        }
-
-
-
-        return $appointments;
+        $appointments[] = $row;
 
 
     }
 
 
+    return $appointments;
+
+}
 
 
 
@@ -232,80 +78,181 @@ class Appointment
 
 
 
-    /*
-    ==================================
-    CREATE APPOINTMENT
-    ==================================
-    */
+/*
+==================================
+SEARCH APPOINTMENTS
+==================================
+*/
+
+function searchAppointments(
+    $conn,
+    $keyword
+)
+{
 
 
-    public function createAppointment(
-        $customer,
-        $beautician,
-        $service,
-        $date,
-        $time
-    )
+    $keyword =
+        "%" . $keyword . "%";
+
+
+    $query = "
+
+    SELECT
+
+    appointments.*,
+
+    customer.full_name AS customer_name,
+
+    beautician.full_name AS beautician_name,
+
+    services.service_name
+
+
+    FROM appointments
+
+
+    LEFT JOIN users customer
+
+    ON appointments.customer_id = customer.id
+
+
+    LEFT JOIN users beautician
+
+    ON appointments.beautician_id = beautician.id
+
+
+    LEFT JOIN services
+
+    ON appointments.service_id = services.id
+
+
+    WHERE
+
+    customer.full_name LIKE ?
+
+    OR beautician.full_name LIKE ?
+
+    OR services.service_name LIKE ?
+
+    OR appointments.status LIKE ?
+
+
+    ORDER BY appointments.id DESC
+
+    ";
+
+
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
+
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "ssss",
+        $keyword,
+        $keyword,
+        $keyword,
+        $keyword
+    );
+
+
+    mysqli_stmt_execute($stmt);
+
+
+    $result =
+        mysqli_stmt_get_result($stmt);
+
+
+    $appointments = [];
+
+
+    while($row =
+        mysqli_fetch_assoc($result))
     {
 
 
-        $status = "pending";
+        $appointments[] = $row;
+
+
+    }
+
+
+    return $appointments;
+
+}
 
 
 
-        $query = "
 
-        INSERT INTO appointments
 
-        (
+
+
+/*
+==================================
+CREATE APPOINTMENT
+==================================
+*/
+function createAppointment(
+    $conn,
+    $customer,
+    $service,
+    $date,
+    $time,
+    $safetyNote
+)
+{
+
+
+    $status = "pending";
+
+
+    $query = "
+
+    INSERT INTO appointments
+
+    (
 
         customer_id,
-
-        beautician_id,
-
         service_id,
-
         appointment_date,
-
         appointment_time,
-
+        safety_note,
         status
 
-        )
-
-        VALUES
-
-        (?,?,?,?,?,?)
-
-        ";
+    )
 
 
+    VALUES
 
-        $stmt =
-            mysqli_prepare(
-                $this->conn,
-                $query
-            );
+    (?,?,?,?,?,?)
+
+    ";
 
 
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
 
         mysqli_stmt_bind_param(
             $stmt,
-            "iiisss",
+            "iissss",
             $customer,
-            $beautician,
             $service,
             $date,
             $time,
+            $safetyNote,
             $status
         );
 
 
+    return mysqli_stmt_execute($stmt);
 
-        return mysqli_stmt_execute($stmt);
-
-
-    }
+}
 
 
 
@@ -313,62 +260,58 @@ class Appointment
 
 
 
+/*
+==================================
+UPDATE APPOINTMENT STATUS
+==================================
+*/
+
+function updateStatus(
+    $conn,
+    $id,
+    $status
+)
+{
 
 
-    /*
-    ==================================
-    UPDATE APPOINTMENT STATUS
-    ==================================
-    */
+    $query = "
+
+    UPDATE appointments
+
+    SET status = ?
+
+    WHERE id = ?
+
+    ";
 
 
-    public function updateStatus(
-        $id,
-        $status
-    )
-    {
-
-
-        $query = "
-
-        UPDATE appointments
-
-        SET status = ?
-
-        WHERE id = ?
-
-        ";
-
-
-
-        $stmt =
-            mysqli_prepare(
-                $this->conn,
-                $query
-            );
-
-
-
-        mysqli_stmt_bind_param(
-            $stmt,
-            "si",
-            $status,
-            $id
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
         );
 
 
+    mysqli_stmt_bind_param(
+        $stmt,
+        "si",
+        $status,
+        $id
+    );
 
-        return mysqli_stmt_execute($stmt);
 
+    return mysqli_stmt_execute($stmt);
 
-    }
-    /*
+}
+
+/*
 ==================================
 ASSIGN BEAUTICIAN AND CONFIRM
 ==================================
 */
 
-public function assignBeautician(
+function assignBeauticianData(
+    $conn,
     $appointmentId,
     $beauticianId
 )
@@ -393,13 +336,11 @@ public function assignBeautician(
     ";
 
 
-
     $stmt =
         mysqli_prepare(
-            $this->conn,
+            $conn,
             $query
         );
-
 
 
     mysqli_stmt_bind_param(
@@ -411,9 +352,7 @@ public function assignBeautician(
     );
 
 
-
     return mysqli_stmt_execute($stmt);
-
 
 }
 
@@ -423,110 +362,99 @@ public function assignBeautician(
 
 
 
+/*
+==================================
+DELETE APPOINTMENT
+==================================
+*/
+
+function deleteAppointmentData(
+    $conn,
+    $id
+)
+{
 
 
-    /*
-    ==================================
-    DELETE APPOINTMENT
-    ==================================
-    */
+    $query = "
+
+    DELETE FROM appointments
+
+    WHERE id = ?
+
+    ";
 
 
-    public function deleteAppointment($id)
-    {
-
-
-        $query = "
-
-        DELETE FROM appointments
-
-        WHERE id = ?
-
-        ";
-
-
-
-        $stmt =
-            mysqli_prepare(
-                $this->conn,
-                $query
-            );
-
-
-
-        mysqli_stmt_bind_param(
-            $stmt,
-            "i",
-            $id
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
         );
 
 
-
-        return mysqli_stmt_execute($stmt);
-
-
-    }
-
-
+    mysqli_stmt_bind_param(
+        $stmt,
+        "i",
+        $id
+    );
 
 
+    return mysqli_stmt_execute($stmt);
+
+}
 
 
 
 
 
-    /*
-    ==================================
-    GET CUSTOMERS
-    ==================================
-    */
 
 
-    public function getCustomers()
+/*
+==================================
+GET CUSTOMERS
+==================================
+*/
+
+function getCustomers($conn)
+{
+
+
+    $query = "
+
+    SELECT id, full_name
+
+    FROM users
+
+    WHERE role = 'customer'
+
+    ORDER BY full_name ASC
+
+    ";
+
+
+    $result =
+        mysqli_query(
+            $conn,
+            $query
+        );
+
+
+    $customers = [];
+
+
+    while($row =
+        mysqli_fetch_assoc($result))
     {
 
 
-        $query = "
-
-        SELECT id, full_name
-
-        FROM users
-
-        WHERE role = 'customer'
-
-        ORDER BY full_name ASC
-
-        ";
-
-
-
-        $result =
-            mysqli_query(
-                $this->conn,
-                $query
-            );
-
-
-
-        $customers = [];
-
-
-
-        while($row = mysqli_fetch_assoc($result))
-        {
-
-            $customers[] = $row;
-
-        }
-
-
-
-        return $customers;
+        $customers[] = $row;
 
 
     }
 
 
+    return $customers;
+
+}
 
 
 
@@ -534,66 +462,63 @@ public function assignBeautician(
 
 
 
-    /*
-    ==================================
-    GET BEAUTICIANS
-    ==================================
-    */
+/*
+==================================
+GET BEAUTICIANS
+==================================
+*/
+
+function getBeauticians($conn)
+{
 
 
-    public function getBeauticians()
+    $query = "
+
+    SELECT id, full_name
+
+    FROM users
+
+    WHERE role = 'beautician'
+
+    ORDER BY full_name ASC
+
+    ";
+
+
+    $result =
+        mysqli_query(
+            $conn,
+            $query
+        );
+
+
+    $beauticians = [];
+
+
+    while($row =
+        mysqli_fetch_assoc($result))
     {
 
 
-        $query = "
-
-        SELECT id, full_name
-
-        FROM users
-
-        WHERE role = 'beautician'
-
-        ORDER BY full_name ASC
-
-        ";
-
-
-
-        $result =
-            mysqli_query(
-                $this->conn,
-                $query
-            );
-
-
-
-        $beauticians = [];
-
-
-
-        while($row = mysqli_fetch_assoc($result))
-        {
-
-            $beauticians[] = $row;
-
-        }
-
-
-
-        return $beauticians;
+        $beauticians[] = $row;
 
 
     }
 
-    /*
+
+    return $beauticians;
+
+}/*
 ==================================
 GET CONFIRMED APPOINTMENTS
 FOR BEAUTICIAN
 ==================================
 */
 
-
-public function getConfirmedAppointmentsForBeautician($beauticianId)
+function getConfirmedAppointmentsForBeautician(
+    $conn,
+    $beauticianId
+)
 {
 
 
@@ -611,17 +536,14 @@ public function getConfirmedAppointmentsForBeautician($beauticianId)
     FROM appointments
 
 
-
     LEFT JOIN users customer
 
     ON appointments.customer_id = customer.id
 
 
-
     LEFT JOIN services
 
     ON appointments.service_id = services.id
-
 
 
     WHERE
@@ -633,20 +555,17 @@ public function getConfirmedAppointmentsForBeautician($beauticianId)
     appointments.status = 'confirmed'
 
 
-
     ORDER BY appointments.id DESC
 
 
     ";
 
 
-
     $stmt =
         mysqli_prepare(
-            $this->conn,
+            $conn,
             $query
         );
-
 
 
     mysqli_stmt_bind_param(
@@ -656,9 +575,7 @@ public function getConfirmedAppointmentsForBeautician($beauticianId)
     );
 
 
-
     mysqli_stmt_execute($stmt);
-
 
 
     $result =
@@ -670,10 +587,13 @@ public function getConfirmedAppointmentsForBeautician($beauticianId)
 
 
 
-    while($row = mysqli_fetch_assoc($result))
+    while($row =
+        mysqli_fetch_assoc($result))
     {
 
+
         $appointments[] = $row;
+
 
     }
 
@@ -690,58 +610,62 @@ public function getConfirmedAppointmentsForBeautician($beauticianId)
 
 
 
+/*
+==================================
+GET SERVICES
+==================================
+*/
 
-    /*
-    ==================================
-    GET SERVICES
-    ==================================
-    */
+function getServices($conn)
+{
 
 
-    public function getServices()
+    $query = "
+
+    SELECT
+
+    id,
+
+    service_name
+
+
+    FROM services
+
+
+    ORDER BY service_name ASC
+
+
+    ";
+
+
+    $result =
+        mysqli_query(
+            $conn,
+            $query
+        );
+
+
+
+    $services = [];
+
+
+
+    while($row =
+        mysqli_fetch_assoc($result))
     {
 
 
-        $query = "
-
-        SELECT id, service_name
-
-        FROM services
-
-        ORDER BY service_name ASC
-
-        ";
-
-
-
-        $result =
-            mysqli_query(
-                $this->conn,
-                $query
-            );
-
-
-
-        $services = [];
-
-
-
-        while($row = mysqli_fetch_assoc($result))
-        {
-
-            $services[] = $row;
-
-        }
-
-
-
-        return $services;
+        $services[] = $row;
 
 
     }
 
 
 
+    return $services;
+
+
 }
+
 
 ?>
