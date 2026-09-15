@@ -1,283 +1,276 @@
 <?php
 
 
-class Notice
+/*
+==================================
+CREATE NOTICE
+==================================
+*/
+
+function createNotice(
+    $conn,
+    $title,
+    $message,
+    $createdBy,
+    $receiverRole
+)
 {
 
 
-    private $conn;
+    $query = "
+
+    INSERT INTO notices
+
+    (
+        title,
+        message,
+        created_by,
+        receiver_role
+    )
+
+
+    VALUES
+
+    (?,?,?,?)
+
+    ";
 
 
 
-    public function __construct($conn)
-    {
-
-        $this->conn = $conn;
-
-    }
-
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
 
 
 
-
-
-    /*
-    ==================================
-    CREATE NOTICE
-    ==================================
-    */
-
-
-    public function createNotice(
+    mysqli_stmt_bind_param(
+        $stmt,
+        "ssis",
         $title,
         $message,
         $createdBy,
         $receiverRole
-    )
-    {
-    
-    
-        $query = "
-    
-        INSERT INTO notices
-    
-        (
-            title,
-            message,
-            created_by,
-            receiver_role
-        )
-    
-    
-        VALUES
-    
-        (?,?,?,?)
-    
-        ";
-    
-    
-    
-        $stmt =
-            mysqli_prepare(
-                $this->conn,
-                $query
-            );
-    
-    
-    
-        mysqli_stmt_bind_param(
-            $stmt,
-            "ssis",
-            $title,
-            $message,
-            $createdBy,
-            $receiverRole
-        );
-    
-    
-    
-        return mysqli_stmt_execute($stmt);
-    
-    
-    }
-
-
-
-
-
-
-
-    /*
-    ==================================
-    GET ALL NOTICES
-    ==================================
-    */
-
-    public function getAllNotices()
-    {
-    
-    
-    $query = "
-    
-    SELECT 
-    
-    notices.*,
-    
-    users.full_name AS creator_name
-    
-    
-    FROM notices
-    
-    
-    LEFT JOIN users
-    
-    ON notices.created_by = users.id
-    
-    
-    ORDER BY notices.id DESC
-    
-    
-    ";
-    
-    
-    
-    $result = mysqli_query(
-        $this->conn,
-        $query
     );
-    
-    
-    
+
+
+
+    return mysqli_stmt_execute($stmt);
+
+
+}
+
+
+
+
+
+
+
+
+/*
+==================================
+GET ALL NOTICES
+==================================
+*/
+
+function getAllNotices($conn)
+{
+
+
+    $query = "
+
+    SELECT
+
+    notices.*,
+
+    users.full_name AS creator_name
+
+
+    FROM notices
+
+
+    LEFT JOIN users
+
+    ON notices.created_by = users.id
+
+
+    ORDER BY notices.id DESC
+
+
+    ";
+
+
+
+    $result =
+        mysqli_query(
+            $conn,
+            $query
+        );
+
+
+
     $notices = [];
-    
-    
-    
-    while($row = mysqli_fetch_assoc($result))
+
+
+
+    while($row =
+        mysqli_fetch_assoc($result))
     {
-    
-    
+
         $notices[] = $row;
-    
-    
+
     }
-    
-    
-    
+
+
+
     return $notices;
-    
-    
-    }
- /*
+
+
+}
+
+
+
+
+
+
+
+
+/*
 ==================================
 GET BEAUTICIAN NOTICES
 ==================================
 */
 
-public function getBeauticianNotices()
+function getBeauticianNotices($conn)
 {
 
 
-$query = "
+    $query = "
 
-SELECT 
+    SELECT
 
-notices.*,
+    notices.*,
 
-users.full_name AS creator_name
-
-
-FROM notices
+    users.full_name AS creator_name
 
 
-LEFT JOIN users
-
-ON notices.created_by = users.id
+    FROM notices
 
 
-WHERE notices.receiver_role = ?
+    LEFT JOIN users
+
+    ON notices.created_by = users.id
 
 
-ORDER BY notices.id DESC
+    WHERE notices.receiver_role = ?
 
 
-";
+    ORDER BY notices.id DESC
 
 
-$stmt = mysqli_prepare(
-    $this->conn,
-    $query
-);
+    ";
 
 
 
-$role = "beautician";
-
-
-mysqli_stmt_bind_param(
-    $stmt,
-    "s",
-    $role
-);
-
-
-
-mysqli_stmt_execute($stmt);
-
-
-
-$result = mysqli_stmt_get_result($stmt);
-
-
-
-$notices = [];
-
-
-
-while($row = mysqli_fetch_assoc($result))
-{
-
-
-    $notices[] = $row;
-
-
-}
-
-
-
-return $notices;
-
-
-
-}
-
-
-
-
-    /*
-    ==================================
-    DELETE NOTICE
-    ==================================
-    */
-
-
-    public function deleteNotice($id)
-    {
-
-
-        $query = "
-
-        DELETE FROM notices
-
-        WHERE id = ?
-
-        ";
-
-
-
-        $stmt =
-            mysqli_prepare(
-                $this->conn,
-                $query
-            );
-
-
-
-        mysqli_stmt_bind_param(
-            $stmt,
-            "i",
-            $id
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
         );
 
 
 
-        return mysqli_stmt_execute($stmt);
+    $role = "beautician";
 
+
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "s",
+        $role
+    );
+
+
+
+    mysqli_stmt_execute($stmt);
+
+
+
+    $result =
+        mysqli_stmt_get_result($stmt);
+
+
+
+    $notices = [];
+
+
+
+    while($row =
+        mysqli_fetch_assoc($result))
+    {
+
+        $notices[] = $row;
 
     }
 
 
 
+    return $notices;
+
 
 }
+
+
+
+
+
+
+
+
+/*
+==================================
+DELETE NOTICE
+==================================
+*/
+
+function deleteNoticeData(
+    $conn,
+    $id
+)
+{
+
+
+    $query = "
+
+    DELETE FROM notices
+
+    WHERE id = ?
+
+    ";
+
+
+
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
+
+
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "i",
+        $id
+    );
+
+
+
+    return mysqli_stmt_execute($stmt);
+
+
+}
+
 
 ?>
