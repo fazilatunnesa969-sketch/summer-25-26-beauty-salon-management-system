@@ -73,7 +73,7 @@ require __DIR__ . '/../partials/header.php';
 
 
 <form method="POST"
-action="index.php?page=add-appointment">
+action="index.php?page=save-receptionist-appointment">
 
 
 
