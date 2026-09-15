@@ -3,60 +3,35 @@
 
 require_once __DIR__ . '/../models/Appointment.php';
 require_once __DIR__ . '/../models/Invoice.php';
-require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/Notice.php';
+require_once __DIR__ . '/../config/database.php';
 
 
-class ReceptionistController
+
+
+/*
+==================================
+APPOINTMENT QUEUE
+==================================
+*/
+
+function appointmentQueue()
 {
 
-
-    private $appointmentModel;
-    private $invoiceModel;
-    private $noticeModel;
-
-
-
-    public function __construct()
-    {
-
-        global $conn;
-
-
-        $this->appointmentModel =
-            new Appointment($conn);
-            $this->invoiceModel =
-    new Invoice($conn);
-    $this->noticeModel =
-    new Notice($conn);
-    }
-
-
-
-
-
-    /*
-    ==================================
-    APPOINTMENT QUEUE
-    ==================================
-    */
-
-
-    public function appointmentQueue()
-{
+    global $conn;
 
 
     if(
-        isset($_GET['search']) 
-        && 
+        isset($_GET['search'])
+        &&
         $_GET['search'] != ''
     )
     {
 
 
         $appointments =
-            $this->appointmentModel
-            ->searchAppointments(
+            searchAppointments(
+                $conn,
                 $_GET['search']
             );
 
@@ -67,8 +42,7 @@ class ReceptionistController
 
 
         $appointments =
-            $this->appointmentModel
-            ->getAllAppointments();
+            getAllAppointments($conn);
 
 
     }
@@ -76,9 +50,7 @@ class ReceptionistController
 
 
     $beauticians =
-        $this->appointmentModel
-        ->getBeauticians();
-
+        getBeauticians($conn);
 
 
 
@@ -87,14 +59,101 @@ class ReceptionistController
 
 
 }
-    /*
+/*
+==================================
+ADD APPOINTMENT PAGE
+==================================
+*/
+
+function addAppointment()
+{
+
+    global $conn;
+
+
+    $customers =
+        getCustomers($conn);
+
+
+    $services =
+        getServices($conn);
+
+
+
+    require __DIR__
+    . '/../views/receptionist/add-appointment.php';
+
+}
+/*
+==================================
+SAVE RECEPTIONIST APPOINTMENT
+==================================
+*/
+
+function saveReceptionistAppointment()
+{
+
+    global $conn;
+
+
+    if($_SERVER['REQUEST_METHOD'] == 'POST')
+    {
+
+
+        $customer =
+            $_POST['customer_id'];
+
+
+        $service =
+            $_POST['service_id'];
+
+
+        $date =
+            $_POST['appointment_date'];
+
+
+        $time =
+            $_POST['appointment_time'];
+
+
+
+        createAppointment(
+            $conn,
+            $customer,
+            $service,
+            $date,
+            $time,
+            ''
+        );
+
+
+
+        header(
+            "Location: index.php?page=appointment-queue"
+        );
+
+
+        exit;
+
+    }
+
+}
+
+
+
+
+
+
+/*
 ==================================
 SEARCH APPOINTMENTS AJAX
 ==================================
 */
 
-public function searchAppointmentsAjax()
+function searchAppointmentsAjax()
 {
+
+    global $conn;
 
 
     $keyword =
@@ -103,8 +162,8 @@ public function searchAppointmentsAjax()
 
 
     $appointments =
-        $this->appointmentModel
-        ->searchAppointments(
+        searchAppointments(
+            $conn,
             $keyword
         );
 
@@ -121,113 +180,29 @@ public function searchAppointmentsAjax()
 
     exit;
 
-
-}
-
-    public function deleteAppointment()
-{
-
-
-    $id =
-        $_GET['id'] ?? null;
-
-
-
-    if($id)
-    {
-
-
-        $this->appointmentModel
-        ->deleteAppointment($id);
-
-
-    }
-
-
-
-    header(
-        "Location: index.php?page=appointment-queue"
-    );
-
-
-    exit;
-
-
 }
 
 
-public function updateAppointmentStatus()
-{
-
-
-    $id =
-        $_GET['id'] ?? null;
-
-
-    $status =
-        $_GET['status'] ?? null;
 
 
 
-    if($id && $status)
-    {
 
-
-        $this->appointmentModel
-        ->updateStatus(
-            $id,
-            $status
-        );
-
-
-    }
-
-
-
-    header(
-        "Location: index.php?page=appointment-queue"
-    );
-
-
-    exit;
-
-
-}
 /*
 ==================================
-ASSIGN BEAUTICIAN
+DELETE APPOINTMENT
 ==================================
 */
 
-public function assignBeautician()
+function deleteAppointment()
 {
 
-
-    $appointmentId =
-        $_POST['appointment_id'] ?? null;
+    global $conn;
 
 
-
-    $beauticianId =
-        $_POST['beautician_id'] ?? null;
-
-
-
-    if($appointmentId && $beauticianId)
-    {
-
-
-        $this->appointmentModel
-        ->assignBeautician(
-
-            $appointmentId,
-
-            $beauticianId
-
-        );
-
-
-    }
+    deleteAppointmentData(
+        $conn,
+        $id
+    );
 
 
 
@@ -238,111 +213,20 @@ public function assignBeautician()
 
     exit;
 
-
 }
 
 
 
-
-public function addAppointment()
-{
-
-
-    if($_SERVER['REQUEST_METHOD'] == 'POST')
-    {
-
-
-        $customer =
-            $_POST['customer_id'];
-
-
-        $beautician =
-            $_POST['beautician_id'];
-
-
-        $service =
-            $_POST['service_id'];
-
-
-        $date =
-            $_POST['appointment_date'];
-
-
-        $time =
-            $_POST['appointment_time'];
-
-
-
-        $this->appointmentModel
-        ->createAppointment(
-
-            $customer,
-
-            $beautician,
-
-            $service,
-
-            $date,
-
-            $time
-
-        );
-
-
-
-        header(
-            "Location: index.php?page=appointment-queue"
-        );
-
-
-        exit;
-
-
-    }
-
-
-
-
-
-    // LOAD DROPDOWN DATA
-
-
-    $customers =
-        $this->appointmentModel
-        ->getCustomers();
-
-
-
-    $beauticians =
-        $this->appointmentModel
-        ->getBeauticians();
-
-
-
-    $services =
-        $this->appointmentModel
-        ->getServices();
-
-
-
-
-
-
-    require __DIR__
-    . '/../views/receptionist/add-appointment.php';
-
-
-
-}
 /*
 ==================================
 INVOICE LIST
 ==================================
 */
 
-
-public function invoices()
+function invoices()
 {
+
+    global $conn;
 
 
     if(
@@ -354,8 +238,8 @@ public function invoices()
 
 
         $invoices =
-            $this->invoiceModel
-            ->searchInvoice(
+            searchInvoice(
+                $conn,
                 $_GET['search']
             );
 
@@ -366,8 +250,7 @@ public function invoices()
 
 
         $invoices =
-            $this->invoiceModel
-            ->getAllInvoices();
+            getAllInvoices($conn);
 
 
     }
@@ -385,15 +268,18 @@ public function invoices()
 
 
 
+
+
 /*
 ==================================
 ADD INVOICE
 ==================================
 */
 
-
-public function addInvoice()
+function addInvoice()
 {
+
+    global $conn;
 
 
     if($_SERVER['REQUEST_METHOD'] == 'POST')
@@ -417,17 +303,12 @@ public function addInvoice()
 
 
 
-        $this->invoiceModel
-        ->createInvoice(
-
+        createInvoice(
+            $conn,
             $appointment,
-
             $customer,
-
             $amount,
-
             $paymentMethod
-
         );
 
 
@@ -439,7 +320,6 @@ public function addInvoice()
 
         exit;
 
-
     }
 
 
@@ -448,8 +328,8 @@ public function addInvoice()
     . '/../views/receptionist/add-invoice.php';
 
 
-
 }
+
 
 
 
@@ -463,9 +343,10 @@ UPDATE PAYMENT
 ==================================
 */
 
-
-public function updatePayment()
+function updatePayment()
 {
+
+    global $conn;
 
 
     $id =
@@ -481,8 +362,8 @@ public function updatePayment()
     {
 
 
-        $this->invoiceModel
-        ->updatePaymentStatus(
+        updatePaymentStatus(
+            $conn,
             $id,
             $status
         );
@@ -499,8 +380,9 @@ public function updatePayment()
 
     exit;
 
-
 }
+
+
 
 
 
@@ -513,9 +395,10 @@ DELETE INVOICE
 ==================================
 */
 
-
-public function deleteInvoice()
+function deleteInvoice()
 {
+
+    global $conn;
 
 
     $id =
@@ -526,8 +409,12 @@ public function deleteInvoice()
     if($id)
     {
 
-        $this->invoiceModel
-        ->deleteInvoice($id);
+
+        deleteInvoiceData(
+            $conn,
+            $id
+        );
+
 
     }
 
@@ -540,22 +427,23 @@ public function deleteInvoice()
 
     exit;
 
-
 }
+
+
 /*
 ==================================
 NOTICE LIST
 ==================================
 */
 
-
-public function notices()
+function notices()
 {
+
+    global $conn;
 
 
     $notices =
-        $this->noticeModel
-        ->getAllNotices();
+        getAllNotices($conn);
 
 
 
@@ -571,15 +459,17 @@ public function notices()
 
 
 
+
 /*
 ==================================
 ADD NOTICE
 ==================================
 */
 
-
-public function addNotice()
+function addNotice()
 {
+
+    global $conn;
 
 
     if($_SERVER['REQUEST_METHOD'] == 'POST')
@@ -597,29 +487,26 @@ public function addNotice()
 
 
         $receiverRole =
-            $_POST['receiver_role'] ?? 'beautician';
+            $_POST['receiver_role']
+            ??
+            'beautician';
 
 
 
         $createdBy =
-            $_SESSION['user_id'] ?? 0;
+            $_SESSION['user_id']
+            ??
+            0;
 
 
 
-
-        $this->noticeModel
-        ->createNotice(
-
+        createNotice(
+            $conn,
             $title,
-
             $message,
-
             $createdBy,
-
             $receiverRole
-
         );
-
 
 
 
@@ -640,15 +527,24 @@ public function addNotice()
 
 
 }
+
+
+
+
+
+
+
+
 /*
 ==================================
 DELETE NOTICE
 ==================================
 */
 
-
-public function deleteNotice()
+function deleteNotice()
 {
+
+    global $conn;
 
 
     $id =
@@ -660,8 +556,10 @@ public function deleteNotice()
     {
 
 
-        $this->noticeModel
-        ->deleteNotice($id);
+        deleteNoticeData(
+            $conn,
+            $id
+        );
 
 
     }
@@ -675,8 +573,61 @@ public function deleteNotice()
 
     exit;
 
+}
+/*
+==================================
+RECEPTIONIST DASHBOARD
+==================================
+*/
+
+function receptionistDashboard()
+{
+
+    require __DIR__
+    . '/../views/dashboard/index.php';
 
 }
+
+/*
+==================================
+ASSIGN BEAUTICIAN
+==================================
+*/
+
+function assignBeautician()
+{
+
+    global $conn;
+
+
+    $appointmentId =
+        $_POST['appointment_id'] ?? null;
+
+
+    $beauticianId =
+        $_POST['beautician_id'] ?? null;
+
+
+
+    if($appointmentId && $beauticianId)
+    {
+
+        assignBeauticianData(
+            $conn,
+            $appointmentId,
+            $beauticianId
+        );
+
+    }
+
+
+
+    header(
+        "Location: index.php?page=appointment-queue"
+    );
+
+
+    exit;
 
 }
 
