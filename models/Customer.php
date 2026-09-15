@@ -1,104 +1,83 @@
 <?php
 
 
-class Customer
-{
-
-
-    private $conn;
-
-
-
-    public function __construct($conn)
-    {
-
-        $this->conn = $conn;
-
-    }
-
-
-
-
-
-
 /*
 ==================================
 GET CUSTOMER APPOINTMENTS
 ==================================
 */
 
-
-public function getAppointments($customerId)
-{
-
-
-$query = "
-
-SELECT
-
-appointments.*,
-
-services.service_name
-
-
-FROM appointments
-
-
-LEFT JOIN services
-
-ON appointments.service_id = services.id
-
-
-WHERE appointments.customer_id = ?
-
-
-ORDER BY appointments.id DESC
-
-
-";
-
-
-
-$stmt = mysqli_prepare(
-    $this->conn,
-    $query
-);
-
-
-
-mysqli_stmt_bind_param(
-    $stmt,
-    "i",
+function getAppointments(
+    $conn,
     $customerId
-);
-
-
-
-mysqli_stmt_execute($stmt);
-
-
-
-$result = mysqli_stmt_get_result($stmt);
-
-
-
-$appointments = [];
-
-
-
-while($row = mysqli_fetch_assoc($result))
+)
 {
 
-    $appointments[] = $row;
+
+    $query = "
+
+    SELECT
+
+    appointments.*,
+
+    services.service_name
+
+
+    FROM appointments
+
+
+    LEFT JOIN services
+
+    ON appointments.service_id = services.id
+
+
+    WHERE appointments.customer_id = ?
+
+
+    ORDER BY appointments.id DESC
+
+
+    ";
+
+
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
+
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "i",
+        $customerId
+    );
+
+
+    mysqli_stmt_execute($stmt);
+
+
+    $result =
+        mysqli_stmt_get_result($stmt);
+
+
+    $appointments = [];
+
+
+    while($row =
+        mysqli_fetch_assoc($result))
+    {
+
+        $appointments[] = $row;
+
+    }
+
+
+    return $appointments;
+
 
 }
 
-
-
-return $appointments;
-
-
-}
 
 
 
@@ -112,95 +91,94 @@ GET UPCOMING APPOINTMENTS
 ==================================
 */
 
-
-public function getUpcomingAppointments($customerId)
-{
-
-
-$query = "
-
-SELECT
-
-
-appointments.*,
-
-services.service_name,
-
-services.price,
-
-services.duration
-
-
-
-FROM appointments
-
-
-
-LEFT JOIN services
-
-ON appointments.service_id = services.id
-
-
-
-WHERE appointments.customer_id = ?
-
-
-
-AND appointments.status != 'completed'
-
-
-
-ORDER BY appointments.appointment_date ASC
-
-
-
-";
-
-
-
-
-$stmt = mysqli_prepare(
-    $this->conn,
-    $query
-);
-
-
-
-mysqli_stmt_bind_param(
-    $stmt,
-    "i",
+function getUpcomingAppointments(
+    $conn,
     $customerId
-);
-
-
-
-mysqli_stmt_execute($stmt);
-
-
-
-$result = mysqli_stmt_get_result($stmt);
-
-
-
-$appointments = [];
-
-
-
-while($row = mysqli_fetch_assoc($result))
+)
 {
 
 
-    $appointments[] = $row;
+    $query = "
+
+    SELECT
+
+
+    appointments.*,
+
+    services.service_name,
+
+    services.price,
+
+    services.duration
+
+
+    FROM appointments
+
+
+    LEFT JOIN services
+
+    ON appointments.service_id = services.id
+
+
+    WHERE appointments.customer_id = ?
+
+
+    AND appointments.status != 'completed'
+
+
+    ORDER BY appointments.appointment_date ASC
+
+
+    ";
+
+
+
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
+
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "i",
+        $customerId
+    );
+
+
+    mysqli_stmt_execute($stmt);
+
+
+    $result =
+        mysqli_stmt_get_result($stmt);
+
+
+    $appointments = [];
+
+
+    while($row =
+        mysqli_fetch_assoc($result))
+    {
+
+
+        $appointments[] = $row;
+
+
+    }
+
+
+    return $appointments;
 
 
 }
 
 
 
-return $appointments;
 
 
-}
+
+
 
 /*
 ==================================
@@ -208,241 +186,236 @@ SEARCH APPOINTMENTS
 ==================================
 */
 
-
-public function searchAppointments(
+function searchCustomerAppointments(
+    $conn,
     $customerId,
     $keyword
 )
 {
 
 
-$query = "
+    $search =
+        "%".$keyword."%";
 
-SELECT
 
 
-appointments.*,
+    $query = "
 
+    SELECT
 
-services.service_name,
 
+    appointments.*,
 
-services.price,
+    services.service_name,
 
+    services.price,
 
-services.duration
+    services.duration
 
 
 
-FROM appointments
+    FROM appointments
 
 
 
-LEFT JOIN services
+    LEFT JOIN services
 
-ON appointments.service_id = services.id
+    ON appointments.service_id = services.id
 
 
 
-WHERE appointments.customer_id = ?
+    WHERE appointments.customer_id = ?
 
 
 
-AND appointments.status != 'completed'
+    AND appointments.status != 'completed'
 
 
+    AND
 
-AND
-(
-appointments.id LIKE ?
+    (
 
-OR services.service_name LIKE ?
+    appointments.id LIKE ?
 
-OR appointments.appointment_date LIKE ?
+    OR services.service_name LIKE ?
 
-)
+    OR appointments.appointment_date LIKE ?
 
+    )
 
 
-ORDER BY appointments.id DESC
+    ORDER BY appointments.id DESC
 
 
+    ";
 
-";
 
 
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
 
 
 
-$search = "%".$keyword."%";
+    mysqli_stmt_bind_param(
+        $stmt,
+        "isss",
+        $customerId,
+        $search,
+        $search,
+        $search
+    );
 
 
+    mysqli_stmt_execute($stmt);
 
 
+    $result =
+        mysqli_stmt_get_result($stmt);
 
-$stmt = mysqli_prepare(
-$this->conn,
-$query
-);
 
+    $appointments = [];
 
 
+    while($row =
+        mysqli_fetch_assoc($result))
+    {
 
 
-mysqli_stmt_bind_param(
-$stmt,
-"isss",
-$customerId,
-$search,
-$search,
-$search
-);
+        $appointments[] = $row;
 
 
+    }
 
 
+    return $appointments;
 
-mysqli_stmt_execute($stmt);
 
-
-
-$result =
-mysqli_stmt_get_result($stmt);
-
-
-
-$appointments = [];
-
-
-
-
-while($row = mysqli_fetch_assoc($result))
-{
-
-
-$appointments[] = $row;
-
-
-}
-
-
-
-return $appointments;
-
-
-
-}
-
-/*
+}/*
 ==================================
 CANCEL APPOINTMENT
 ==================================
 */
 
-
-public function cancelAppointment(
+function cancelCustomerAppointment(
+    $conn,
     $appointmentId,
     $customerId
 )
 {
 
 
-$query = "
+    $query = "
 
-UPDATE appointments
+    UPDATE appointments
 
-SET status='cancelled'
+    SET status='cancelled'
 
-WHERE id = ?
+    WHERE id = ?
 
-AND customer_id = ?
+    AND customer_id = ?
 
-AND status != 'completed'
+    AND status != 'completed'
 
-";
-
-
-
-$stmt = mysqli_prepare(
-    $this->conn,
-    $query
-);
+    ";
 
 
 
-mysqli_stmt_bind_param(
-    $stmt,
-    "ii",
-    $appointmentId,
-    $customerId
-);
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
 
 
 
-mysqli_stmt_execute($stmt);
+    mysqli_stmt_bind_param(
+        $stmt,
+        "ii",
+        $appointmentId,
+        $customerId
+    );
 
 
 
-if(mysqli_stmt_affected_rows($stmt) > 0)
-{
+    mysqli_stmt_execute($stmt);
 
-    return true;
+
+
+    if(
+        mysqli_stmt_affected_rows($stmt) > 0
+    )
+    {
+
+        return true;
+
+    }
+
+
+
+    return false;
+
 
 }
 
 
-return false;
 
 
 
-}
+
+
+
 /*
 ==================================
 GET ACTIVE SERVICES
 ==================================
 */
 
-
-public function getServices()
+function getCustomerServices($conn)
 {
 
 
-$query = "
+    $query = "
 
-SELECT *
+    SELECT *
 
-FROM services
+    FROM services
 
-WHERE status='active'
+    WHERE status='active'
 
-ORDER BY id ASC
+    ORDER BY id ASC
 
-
-";
-
-
-
-$result = mysqli_query(
-    $this->conn,
-    $query
-);
+    ";
 
 
 
-$services = [];
+    $result =
+        mysqli_query(
+            $conn,
+            $query
+        );
 
 
 
-while($row = mysqli_fetch_assoc($result))
-{
-
-    $services[] = $row;
-
-}
+    $services = [];
 
 
 
-return $services;
+    while($row =
+        mysqli_fetch_assoc($result))
+    {
+
+
+        $services[] = $row;
+
+
+    }
+
+
+
+    return $services;
 
 
 }
@@ -460,50 +433,53 @@ GET SINGLE SERVICE
 ==================================
 */
 
-
-public function getServiceById($serviceId)
+function getServiceById(
+    $conn,
+    $serviceId
+)
 {
 
 
-$query = "
+    $query = "
 
-SELECT *
+    SELECT *
 
-FROM services
+    FROM services
 
-WHERE id = ?
+    WHERE id = ?
 
-LIMIT 1
+    LIMIT 1
 
-
-";
-
-
-
-$stmt = mysqli_prepare(
-    $this->conn,
-    $query
-);
+    ";
 
 
 
-mysqli_stmt_bind_param(
-    $stmt,
-    "i",
-    $serviceId
-);
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
 
 
 
-mysqli_stmt_execute($stmt);
+    mysqli_stmt_bind_param(
+        $stmt,
+        "i",
+        $serviceId
+    );
 
 
 
-$result = mysqli_stmt_get_result($stmt);
+    mysqli_stmt_execute($stmt);
 
 
 
-return mysqli_fetch_assoc($result);
+    $result =
+        mysqli_stmt_get_result($stmt);
+
+
+
+    return mysqli_fetch_assoc($result);
 
 
 }
@@ -521,8 +497,8 @@ CREATE CUSTOMER ACCOUNT
 ==================================
 */
 
-
-public function createCustomer(
+function createCustomer(
+    $conn,
     $fullName,
     $email,
     $phone,
@@ -531,182 +507,172 @@ public function createCustomer(
 {
 
 
-$check = "
+    $check = "
 
-SELECT id
+    SELECT id
 
-FROM users
+    FROM users
 
-WHERE email = ?
+    WHERE email = ?
 
-LIMIT 1
+    LIMIT 1
 
-
-";
-
-
-
-$stmt = mysqli_prepare(
-    $this->conn,
-    $check
-);
+    ";
 
 
 
-mysqli_stmt_bind_param(
-    $stmt,
-    "s",
-    $email
-);
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $check
+        );
 
 
 
-mysqli_stmt_execute($stmt);
+    mysqli_stmt_bind_param(
+        $stmt,
+        "s",
+        $email
+    );
 
 
 
-$result = mysqli_stmt_get_result($stmt);
+    mysqli_stmt_execute($stmt);
 
 
 
-if(mysqli_num_rows($result) > 0)
-{
-
-
-$user = mysqli_fetch_assoc($result);
-
-
-return $user['id'];
-
-
-}
+    $result =
+        mysqli_stmt_get_result($stmt);
 
 
 
+    if(mysqli_num_rows($result) > 0)
+    {
+
+
+        $user =
+            mysqli_fetch_assoc($result);
+
+
+
+        return $user['id'];
+
+
+    }
 
 
 
 
-$username =
 
-strtolower(
-    str_replace(
-        ' ',
-        '',
-        $fullName
+
+
+    $username =
+
+        strtolower(
+            str_replace(
+                ' ',
+                '',
+                $fullName
+            )
+        )
+
+        . rand(100,999);
+
+
+
+
+
+
+    $passwordHash =
+
+        password_hash(
+            $password,
+            PASSWORD_DEFAULT
+        );
+
+
+
+
+
+
+    $role = "customer";
+
+
+    $status = "active";
+
+
+
+
+
+
+    $query = "
+
+    INSERT INTO users
+
+    (
+
+    full_name,
+
+    email,
+
+    phone,
+
+    username,
+
+    password_hash,
+
+    role,
+
+    status
+
     )
-)
-
-. rand(100,999);
 
 
+    VALUES
 
+    (?,?,?,?,?,?,?)
 
-
-
-
-$passwordHash =
-
-password_hash(
-    $password,
-    PASSWORD_DEFAULT
-);
+    ";
 
 
 
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
 
 
 
-$role = "customer";
-
-
-$status = "active";
-
-
-
-
-
-
-
-$query = "
-
-INSERT INTO users
-
-(
-
-full_name,
-
-email,
-
-phone,
-
-username,
-
-password_hash,
-
-role,
-
-status
-
-)
-
-
-VALUES
-
-(?,?,?,?,?,?,?)
-
-
-";
+    mysqli_stmt_bind_param(
+        $stmt,
+        "sssssss",
+        $fullName,
+        $email,
+        $phone,
+        $username,
+        $passwordHash,
+        $role,
+        $status
+    );
 
 
 
-
-
-$stmt = mysqli_prepare(
-    $this->conn,
-    $query
-);
+    mysqli_stmt_execute($stmt);
 
 
 
+    return mysqli_insert_id($conn);
 
 
-
-mysqli_stmt_bind_param(
-    $stmt,
-    "sssssss",
-    $fullName,
-    $email,
-    $phone,
-    $username,
-    $passwordHash,
-    $role,
-    $status
-);
-
-
-
-
-
-mysqli_stmt_execute($stmt);
-
-
-
-return mysqli_insert_id(
-    $this->conn
-);
-
-
-
-}
-/*
+}/*
 ==================================
 CREATE APPOINTMENT
 ==================================
 */
 
-
-public function createAppointment(
+function createCustomerAppointment(
+    $conn,
     $customerId,
     $serviceId,
     $date,
@@ -716,85 +682,81 @@ public function createAppointment(
 {
 
 
-$query = "
+    $query = "
 
-INSERT INTO appointments
+    INSERT INTO appointments
 
-(
+    (
 
-customer_id,
+    customer_id,
 
-service_id,
+    service_id,
 
-appointment_date,
+    appointment_date,
 
-appointment_time,
+    appointment_time,
 
-safety_note,
+    safety_note,
 
-status,
+    status,
 
-payment_status
+    payment_status
 
-)
-
-
-VALUES
-
-(?,?,?,?,?,?,?)
+    )
 
 
-";
+    VALUES
 
+    (?,?,?,?,?,?,?)
+
+    ";
 
 
 
+    $status = "pending";
 
-$status = "pending";
 
-
-$paymentStatus = "pending";
-
+    $paymentStatus = "pending";
 
 
 
-
-$stmt = mysqli_prepare(
-    $this->conn,
-    $query
-);
-
-
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
 
 
 
-
-mysqli_stmt_bind_param(
-    $stmt,
-    "iisssss",
-    $customerId,
-    $serviceId,
-    $date,
-    $time,
-    $safetyNote,
-    $status,
-    $paymentStatus
-);
-
+    mysqli_stmt_bind_param(
+        $stmt,
+        "iisssss",
+        $customerId,
+        $serviceId,
+        $date,
+        $time,
+        $safetyNote,
+        $status,
+        $paymentStatus
+    );
 
 
 
+    if(
+        mysqli_stmt_execute($stmt)
+    )
+    {
 
-if(mysqli_stmt_execute($stmt))
-{
-    return mysqli_insert_id($this->conn);
-}
+        return mysqli_insert_id($conn);
 
-return false;
+    }
+
+
+
+    return false;
 
 
 }
-
 
 
 
@@ -809,67 +771,58 @@ GET LAST APPOINTMENT
 ==================================
 */
 
-
-public function getLastAppointment($customerId)
+function getLastAppointment(
+    $conn,
+    $customerId
+)
 {
 
 
-$query = "
+    $query = "
 
-SELECT *
+    SELECT *
 
-FROM appointments
+    FROM appointments
 
-WHERE customer_id = ?
+    WHERE customer_id = ?
 
-ORDER BY id DESC
+    ORDER BY id DESC
 
-LIMIT 1
+    LIMIT 1
 
-
-";
-
+    ";
 
 
 
-
-$stmt = mysqli_prepare(
-    $this->conn,
-    $query
-);
-
-
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
 
 
 
-mysqli_stmt_bind_param(
-    $stmt,
-    "i",
-    $customerId
-);
+    mysqli_stmt_bind_param(
+        $stmt,
+        "i",
+        $customerId
+    );
 
 
 
-
-
-mysqli_stmt_execute($stmt);
-
+    mysqli_stmt_execute($stmt);
 
 
 
-
-$result = mysqli_stmt_get_result($stmt);
-
-
+    $result =
+        mysqli_stmt_get_result($stmt);
 
 
 
-return mysqli_fetch_assoc($result);
-
+    return mysqli_fetch_assoc($result);
 
 
 }
-
 
 
 
@@ -884,8 +837,8 @@ CREATE PAYMENT
 ==================================
 */
 
-
-public function createPayment(
+function createPayment(
+    $conn,
     $customerId,
     $appointmentId,
     $amount,
@@ -895,216 +848,192 @@ public function createPayment(
 {
 
 
-$query = "
+    $query = "
 
-INSERT INTO payments
+    INSERT INTO payments
 
-(
+    (
 
-customer_id,
+    customer_id,
 
-appointment_id,
+    appointment_id,
 
-amount,
+    amount,
 
-payment_method,
+    payment_method,
 
-transaction_id,
+    transaction_id,
 
-status
+    status
 
-)
-
-
-VALUES
-
-(?,?,?,?,?,?)
+    )
 
 
-";
+    VALUES
 
+    (?,?,?,?,?,?)
+
+    ";
 
 
 
-
-$status = "paid";
-
+    $status = "paid";
 
 
 
-
-$stmt = mysqli_prepare(
-    $this->conn,
-    $query
-);
-
-
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
 
 
 
-
-mysqli_stmt_bind_param(
-    $stmt,
-    "iidsss",
-    $customerId,
-    $appointmentId,
-    $amount,
-    $method,
-    $transactionId,
-    $status
-);
-
+    mysqli_stmt_bind_param(
+        $stmt,
+        "iidsss",
+        $customerId,
+        $appointmentId,
+        $amount,
+        $method,
+        $transactionId,
+        $status
+    );
 
 
 
-
-return mysqli_stmt_execute($stmt);
-
+    return mysqli_stmt_execute($stmt);
 
 
 }
-
-
-
-
-
-
-
-
 /*
 ==================================
 UPDATE PAYMENT STATUS
 ==================================
 */
 
-
-public function updatePaymentStatus($appointmentId)
+function updateCustomerPaymentStatus(
+    $conn,
+    $appointmentId
+)
 {
 
 
-$query = "
+    $query = "
 
-UPDATE appointments
+    UPDATE appointments
 
-SET payment_status='paid'
+    SET payment_status='paid'
 
-WHERE id=?
+    WHERE id=?
 
-
-";
-
+    ";
 
 
 
-
-$stmt = mysqli_prepare(
-    $this->conn,
-    $query
-);
-
-
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
 
 
 
-mysqli_stmt_bind_param(
-    $stmt,
-    "i",
-    $appointmentId
-);
+    mysqli_stmt_bind_param(
+        $stmt,
+        "i",
+        $appointmentId
+    );
 
 
 
-
-
-return mysqli_stmt_execute($stmt);
-
+    return mysqli_stmt_execute($stmt);
 
 
 }
+
+
+
+
+
+
+
+
 /*
 ==================================
 CREATE SAFETY ALERT
 ==================================
 */
 
-
-public function createSafetyAlert(
+function createSafetyAlert(
+    $conn,
     $appointmentId
 )
 {
 
 
-$query = "
+    $query = "
 
-INSERT INTO safety_alerts
+    INSERT INTO safety_alerts
 
-(
+    (
 
-appointment_id,
+    appointment_id,
 
-customer_id,
+    customer_id,
 
-allergy_name,
+    allergy_name,
 
-note,
+    note,
 
-status
+    status
 
-)
-
-
-SELECT
+    )
 
 
-id,
+    SELECT
 
-customer_id,
+    id,
 
-safety_note,
+    customer_id,
 
-safety_note,
+    safety_note,
 
-'pending'
+    safety_note,
 
-
-FROM appointments
-
-
-WHERE id = ?
+    'pending'
 
 
+    FROM appointments
 
-";
+
+    WHERE id = ?
+
+
+    ";
 
 
 
-
-
-$stmt = mysqli_prepare(
-    $this->conn,
-    $query
-);
-
-
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
 
 
 
-mysqli_stmt_bind_param(
-    $stmt,
-    "i",
-    $appointmentId
-);
+    mysqli_stmt_bind_param(
+        $stmt,
+        "i",
+        $appointmentId
+    );
 
 
 
-
-
-return mysqli_stmt_execute($stmt);
-
+    return mysqli_stmt_execute($stmt);
 
 
 }
-
 
 
 
@@ -1119,121 +1048,97 @@ GET CUSTOMER PROFILE
 ==================================
 */
 
-
-public function getProfile($customerId)
+function getProfile(
+    $conn,
+    $customerId
+)
 {
 
 
-$query = "
+    $query = "
 
-SELECT
+    SELECT
 
 
-users.id AS customer_id,
+    users.id AS customer_id,
 
+    users.full_name,
 
-users.full_name,
+    users.email,
 
+    users.phone,
 
-users.email,
 
+    appointments.id AS appointment_id,
 
-users.phone,
+    appointments.appointment_date,
 
+    appointments.appointment_time,
 
 
-appointments.id AS appointment_id,
+    services.service_name
 
 
-appointments.appointment_date,
+    FROM users
 
 
-appointments.appointment_time,
+    LEFT JOIN appointments
 
+    ON users.id = appointments.customer_id
 
 
-services.service_name
+    LEFT JOIN services
 
+    ON appointments.service_id = services.id
 
 
-FROM users
+    WHERE users.id = ?
 
 
+    ORDER BY appointments.id DESC
 
-LEFT JOIN appointments
 
-ON users.id = appointments.customer_id
+    LIMIT 1
 
 
+    ";
 
-LEFT JOIN services
 
-ON appointments.service_id = services.id
 
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
 
 
-WHERE users.id = ?
 
+    mysqli_stmt_bind_param(
+        $stmt,
+        "i",
+        $customerId
+    );
 
 
-ORDER BY appointments.id DESC
 
+    mysqli_stmt_execute($stmt);
 
 
-LIMIT 1
 
+    $result =
+        mysqli_stmt_get_result($stmt);
 
 
-";
 
+    $data =
+        mysqli_fetch_assoc($result);
 
 
 
-
-
-$stmt = mysqli_prepare(
-    $this->conn,
-    $query
-);
-
-
-
-
-
-mysqli_stmt_bind_param(
-    $stmt,
-    "i",
-    $customerId
-);
-
-
-
-
-
-mysqli_stmt_execute($stmt);
-
-
-
-
-
-$result = mysqli_stmt_get_result($stmt);
-
-
-
-
-
-$data = mysqli_fetch_assoc($result);
-
-
-
-
-
-return $data ?: [];
-
+    return $data ?: [];
 
 
 }
-
 
 
 
@@ -1248,80 +1153,65 @@ GET CUSTOMER INFO
 ==================================
 */
 
-
-public function getCustomerInfo($customerId)
+function getCustomerInfo(
+    $conn,
+    $customerId
+)
 {
 
 
-$query = "
+    $query = "
 
-SELECT
+    SELECT
 
+    id,
 
-id,
+    full_name,
 
+    email,
 
-full_name,
-
-
-email,
-
-
-phone
+    phone
 
 
-
-FROM users
-
+    FROM users
 
 
-WHERE id = ?
+    WHERE id = ?
 
 
+    LIMIT 1
 
-LIMIT 1
+
+    ";
 
 
 
-";
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
 
 
 
-
-
-$stmt = mysqli_prepare(
-    $this->conn,
-    $query
-);
-
-
+    mysqli_stmt_bind_param(
+        $stmt,
+        "i",
+        $customerId
+    );
 
 
 
-mysqli_stmt_bind_param(
-    $stmt,
-    "i",
-    $customerId
-);
+    mysqli_stmt_execute($stmt);
 
 
 
-
-
-mysqli_stmt_execute($stmt);
-
-
+    $result =
+        mysqli_stmt_get_result($stmt);
 
 
 
-$result = mysqli_stmt_get_result($stmt);
-
-
-
-
-
-return mysqli_fetch_assoc($result);
-
+    return mysqli_fetch_assoc($result);
 
 
 }
@@ -1335,242 +1225,237 @@ return mysqli_fetch_assoc($result);
 
 /*
 ==================================
-GET PROFILE APPOINTMENT HISTORY
+GET PROFILE HISTORY
 ==================================
 */
 
-
-public function getProfileHistory($customerId)
-
-{
-
-
-$query = "
-
-SELECT
-
-
-appointments.id AS appointment_id,
-
-
-appointments.appointment_date,
-
-
-appointments.appointment_time,
-
-
-appointments.status,
-
-
-appointments.payment_status,
-
-
-
-services.service_name,
-
-
-services.price,
-
-
-services.duration
-
-
-
-FROM appointments
-
-
-
-LEFT JOIN services
-
-ON appointments.service_id = services.id
-
-
-
-WHERE appointments.customer_id = ?
-
-AND appointments.status = 'completed'
-
-
-
-ORDER BY appointments.id DESC
-
-
-
-";
-
-
-
-
-
-$stmt = mysqli_prepare(
-
-    $this->conn,
-
-    $query
-
-);
-
-
-
-
-
-mysqli_stmt_bind_param(
-
-    $stmt,
-
-    "i",
-
+function getProfileHistory(
+    $conn,
     $customerId
-
-);
-
-
-
-
-
-mysqli_stmt_execute($stmt);
-
-
-
-
-
-$result = mysqli_stmt_get_result($stmt);
-
-
-
-
-
-$appointments = [];
-
-
-
-
-
-while($row = mysqli_fetch_assoc($result))
-
+)
 {
 
 
-$appointments[] = $row;
+    $query = "
+
+    SELECT
+
+
+    appointments.id AS appointment_id,
+
+    appointments.appointment_date,
+
+    appointments.appointment_time,
+
+    appointments.status,
+
+    appointments.payment_status,
+
+
+    services.service_name,
+
+    services.price,
+
+    services.duration
+
+
+
+    FROM appointments
+
+
+
+    LEFT JOIN services
+
+    ON appointments.service_id = services.id
+
+
+
+    WHERE appointments.customer_id = ?
+
+
+    AND appointments.status = 'completed'
+
+
+    ORDER BY appointments.id DESC
+
+
+    ";
+
+
+
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
+
+
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "i",
+        $customerId
+    );
+
+
+
+    mysqli_stmt_execute($stmt);
+
+
+
+    $result =
+        mysqli_stmt_get_result($stmt);
+
+
+
+    $appointments = [];
+
+
+
+    while($row =
+        mysqli_fetch_assoc($result))
+    {
+
+
+        $appointments[] = $row;
+
+
+    }
+
+
+
+    return $appointments;
 
 
 }
+/*
+==================================
+RESCHEDULE APPOINTMENT
+==================================
+*/
 
-
-
-
-
-return $appointments;
-
-
-
-}
-
-public function rescheduleAppointment(
+function rescheduleCustomerAppointment(
+    $conn,
     $id,
     $customerId,
     $date,
     $time
-    )
-    {
-    
-    
-    $query="
-    
-    UPDATE appointments
-    
-    SET appointment_date=?,
-    appointment_time=?,
-    status='pending'
-    
-    WHERE id=?
-    AND customer_id=?
-    
-    ";
-    
-    
-    
-    $stmt=mysqli_prepare(
-    $this->conn,
-    $query
-    );
-    
-    
-    
-    mysqli_stmt_bind_param(
-    $stmt,
-    "ssii",
-    $date,
-    $time,
-    $id,
-    $customerId
-    );
-    
-    
-    
-    return mysqli_stmt_execute($stmt);
-    
-    
-    }
+)
+{
 
-    /*
+
+    $query = "
+
+    UPDATE appointments
+
+    SET
+
+    appointment_date=?,
+
+    appointment_time=?,
+
+    status='pending'
+
+
+    WHERE id=?
+
+    AND customer_id=?
+
+
+    ";
+
+
+
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
+
+
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "ssii",
+        $date,
+        $time,
+        $id,
+        $customerId
+    );
+
+
+
+    return mysqli_stmt_execute($stmt);
+
+
+}
+
+
+
+
+
+
+
+
 /*
 ==================================
 GET NEXT RECOMMENDED VISIT
 ==================================
 */
 
-
-public function getNextRecommendedVisit($customerId)
+function getNextRecommendedVisit(
+    $conn,
+    $customerId
+)
 {
 
 
-$query = "
+    $query = "
 
-SELECT *
+    SELECT *
 
-FROM follow_ups
+    FROM follow_ups
 
-WHERE customer_id = ?
+    WHERE customer_id = ?
 
-ORDER BY follow_up_date ASC
+    ORDER BY follow_up_date ASC
 
-LIMIT 1
-
-";
+    LIMIT 1
 
 
-
-$stmt = mysqli_prepare(
-$this->conn,
-$query
-);
+    ";
 
 
 
-mysqli_stmt_bind_param(
-$stmt,
-"i",
-$customerId
-);
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
 
 
 
-mysqli_stmt_execute($stmt);
+    mysqli_stmt_bind_param(
+        $stmt,
+        "i",
+        $customerId
+    );
 
 
 
-$result = mysqli_stmt_get_result($stmt);
+    mysqli_stmt_execute($stmt);
 
 
 
-return mysqli_fetch_assoc($result);
+    $result =
+        mysqli_stmt_get_result($stmt);
 
 
-}
 
-
+    return mysqli_fetch_assoc($result);
 
 
 }
+
+
 ?>
