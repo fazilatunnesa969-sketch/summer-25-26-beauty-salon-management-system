@@ -1,16 +1,6 @@
 <?php
- 
-class HomeController
 
+function home()
 {
-
-    public function index()
-
-    {
-
-        require __DIR__ . '/../views/home.php';
-
-    }
-
+    require __DIR__ . '/../views/home.php';
 }
- 
