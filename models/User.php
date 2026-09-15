@@ -1,442 +1,353 @@
 <?php
 
 
-class User
-{
+/*
+==================================
+CREATE USER
+==================================
+*/
 
-    private $conn;
+function createUser(
+    $conn,
+    $fullName,
+    $email,
+    $username,
+    $password,
+    $role,
+    $permissionCode
+) {
+
+    $passwordHash =
+        password_hash(
+            $password,
+            PASSWORD_DEFAULT
+        );
 
 
-    public function __construct($conn)
-    {
-        $this->conn = $conn;
-    }
+    $status = "active";
+
+    $approvalStatus = "approved";
 
 
+    $query = "
+
+        INSERT INTO users
+        (
+            full_name,
+            email,
+            username,
+            password_hash,
+            role,
+            status,
+            approval_status,
+            permission_code
+        )
+
+        VALUES
+        (?, ?, ?, ?, ?, ?, ?, ?)
+
+    ";
 
 
-    /*
-    ==================================
-    CREATE USER
-    ==================================
-    */
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
+        );
 
-    public function createUser(
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "ssssssss",
         $fullName,
         $email,
         $username,
-        $password,
+        $passwordHash,
         $role,
+        $status,
+        $approvalStatus,
         $permissionCode
-    )
-    {
+    );
 
 
-        $passwordHash =
-            password_hash(
-                $password,
-                PASSWORD_DEFAULT
-            );
+    return mysqli_stmt_execute($stmt);
+}
 
 
 
-        $status = "active";
+/*
+==================================
+FIND USER BY EMAIL
+==================================
+*/
+
+function findUserByEmail(
+    $conn,
+    $email
+) {
+
+    $query = "
+
+        SELECT *
+        FROM users
+        WHERE email = ?
+
+    ";
 
 
-        $approvalStatus = "approved";
-
-
-
-
-        $query = "
-
-            INSERT INTO users
-            (
-                full_name,
-                email,
-                username,
-                password_hash,
-                role,
-                status,
-                approval_status,
-                permission_code
-            )
-
-            VALUES
-            (?, ?, ?, ?, ?, ?, ?, ?)
-
-        ";
-
-
-
-
-        $stmt =
-            mysqli_prepare(
-                $this->conn,
-                $query
-            );
-
-
-
-
-        mysqli_stmt_bind_param(
-            $stmt,
-            "ssssssss",
-            $fullName,
-            $email,
-            $username,
-            $passwordHash,
-            $role,
-            $status,
-            $approvalStatus,
-            $permissionCode
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
         );
 
 
+    mysqli_stmt_bind_param(
+        $stmt,
+        "s",
+        $email
+    );
 
 
-        return mysqli_stmt_execute($stmt);
+    mysqli_stmt_execute($stmt);
 
 
-    }
+    $result =
+        mysqli_stmt_get_result($stmt);
 
 
-
-
-
-
-
-
-    /*
-    ==================================
-    FIND USER BY EMAIL
-    ==================================
-    */
-
-    public function findByEmail($email)
-    {
-
-        $query = "
-
-            SELECT *
-            FROM users
-            WHERE email = ?
-
-        ";
+    return mysqli_fetch_assoc($result);
+}
 
 
 
-        $stmt =
-            mysqli_prepare(
-                $this->conn,
-                $query
-            );
+/*
+==================================
+FIND USER BY USERNAME
+==================================
+*/
+
+function findUserByUsername(
+    $conn,
+    $username
+) {
+
+    $query = "
+
+        SELECT *
+        FROM users
+        WHERE username = ?
+
+    ";
 
 
-
-        mysqli_stmt_bind_param(
-            $stmt,
-            "s",
-            $email
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
         );
 
 
-
-        mysqli_stmt_execute($stmt);
-
-
-
-        $result =
-            mysqli_stmt_get_result($stmt);
+    mysqli_stmt_bind_param(
+        $stmt,
+        "s",
+        $username
+    );
 
 
-
-        return mysqli_fetch_assoc($result);
-
-    }
+    mysqli_stmt_execute($stmt);
 
 
+    $result =
+        mysqli_stmt_get_result($stmt);
 
 
-
+    return mysqli_fetch_assoc($result);
+}
 
 
 
-    /*
-    ==================================
-    FIND USER BY USERNAME
-    ==================================
-    */
+/*
+==================================
+LOGIN SEARCH
+EMAIL OR USERNAME
+==================================
+*/
 
-    public function findByUsername($username)
-    {
+function findUserByLogin(
+    $conn,
+    $login
+) {
 
-        $query = "
+    $query = "
 
-            SELECT *
-            FROM users
-            WHERE username = ?
+        SELECT *
+        FROM users
+        WHERE email = ?
+        OR username = ?
 
-        ";
-
-
-
-        $stmt =
-            mysqli_prepare(
-                $this->conn,
-                $query
-            );
+    ";
 
 
-
-        mysqli_stmt_bind_param(
-            $stmt,
-            "s",
-            $username
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
         );
 
 
-
-        mysqli_stmt_execute($stmt);
-
-
-
-        $result =
-            mysqli_stmt_get_result($stmt);
-
+    mysqli_stmt_bind_param(
+        $stmt,
+        "ss",
+        $login,
+        $login
+    );
 
 
-        return mysqli_fetch_assoc($result);
-
-    }
+    mysqli_stmt_execute($stmt);
 
 
+    $result =
+        mysqli_stmt_get_result($stmt);
 
 
-
-
-
-
-    /*
-    ==================================
-    LOGIN SEARCH
-    Email OR Username
-    ==================================
-    */
-
-    public function findByLogin($login)
-    {
-
-
-        $query = "
-
-            SELECT *
-            FROM users
-            WHERE email = ?
-            OR username = ?
-
-        ";
+    return mysqli_fetch_assoc($result);
+}
 
 
 
-        $stmt =
-            mysqli_prepare(
-                $this->conn,
-                $query
-            );
+/*
+==================================
+GET USER BY ID
+==================================
+*/
+
+function getUserById(
+    $conn,
+    $id
+) {
+
+    $query = "
+
+        SELECT *
+        FROM users
+        WHERE id = ?
+
+    ";
 
 
-
-        mysqli_stmt_bind_param(
-            $stmt,
-            "ss",
-            $login,
-            $login
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
         );
 
 
-
-        mysqli_stmt_execute($stmt);
-
-
-
-        $result =
-            mysqli_stmt_get_result($stmt);
+    mysqli_stmt_bind_param(
+        $stmt,
+        "i",
+        $id
+    );
 
 
-
-        return mysqli_fetch_assoc($result);
-
-
-    }
+    mysqli_stmt_execute($stmt);
 
 
+    $result =
+        mysqli_stmt_get_result($stmt);
 
 
+    return mysqli_fetch_assoc($result);
+}
 
 
 
+/*
+==================================
+UPDATE REMEMBER TOKEN
+==================================
+*/
 
-    /*
-    ==================================
-    GET USER BY ID
-    ==================================
-    */
+function updateRememberToken(
+    $conn,
+    $id,
+    $token
+) {
 
-    public function getUserById($id)
-    {
+    $query = "
 
+        UPDATE users
 
-        $query = "
+        SET remember_token = ?
 
-            SELECT *
-            FROM users
-            WHERE id = ?
+        WHERE id = ?
 
-        ";
-
-
-
-        $stmt =
-            mysqli_prepare(
-                $this->conn,
-                $query
-            );
+    ";
 
 
-
-        mysqli_stmt_bind_param(
-            $stmt,
-            "i",
-            $id
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
         );
 
 
-
-        mysqli_stmt_execute($stmt);
-
-
-
-        $result =
-            mysqli_stmt_get_result($stmt);
-
+    mysqli_stmt_bind_param(
+        $stmt,
+        "si",
+        $token,
+        $id
+    );
 
 
-        return mysqli_fetch_assoc($result);
-
-
-    }
+    return mysqli_stmt_execute($stmt);
+}
 
 
 
+/*
+==================================
+FIND USER BY REMEMBER TOKEN
+==================================
+*/
+
+function findUserByRememberToken(
+    $conn,
+    $token
+) {
+
+    $query = "
+
+        SELECT *
+        FROM users
+
+        WHERE remember_token = ?
+
+    ";
 
 
-
-
-
-    /*
-    ==================================
-    REMEMBER TOKEN UPDATE
-    ==================================
-    */
-
-    public function updateRememberToken($id, $token)
-    {
-    
-
-        $query = "
-
-            UPDATE users
-
-            SET remember_token = ?
-
-            WHERE id = ?
-
-        ";
-
-
-
-        $stmt =
-            mysqli_prepare(
-                $this->conn,
-                $query
-            );
-
-
-
-        mysqli_stmt_bind_param(
-            $stmt,
-            "si",
-            $token,
-            $id
+    $stmt =
+        mysqli_prepare(
+            $conn,
+            $query
         );
 
 
-
-        return mysqli_stmt_execute($stmt);
-    
-    }
-
-
-
+    mysqli_stmt_bind_param(
+        $stmt,
+        "s",
+        $token
+    );
 
 
+    mysqli_stmt_execute($stmt);
 
 
-
-    /*
-    ==================================
-    FIND USER BY REMEMBER TOKEN
-    ==================================
-    */
-
-    public function findByRememberToken($token)
-    {
-    
-
-        $query = "
-
-            SELECT *
-
-            FROM users
-
-            WHERE remember_token = ?
-
-        ";
+    $result =
+        mysqli_stmt_get_result($stmt);
 
 
-
-        $stmt =
-            mysqli_prepare(
-                $this->conn,
-                $query
-            );
-
-
-
-        mysqli_stmt_bind_param(
-            $stmt,
-            "s",
-            $token
-        );
-
-
-
-        mysqli_stmt_execute($stmt);
-
-
-
-        $result =
-            mysqli_stmt_get_result($stmt);
-
-
-
-        return mysqli_fetch_assoc($result);
-    
-    }
-
-
-
+    return mysqli_fetch_assoc($result);
 }
 
 ?>
